@@ -44,8 +44,8 @@ export const getTrack = async (url: string = ''): Promise<Track | string> => {
                 spTrk.otherArtists.items.length == 0
                     ? spTrk.firstArtist.items[0].profile.name
                     : spTrk.firstArtist.items[0].profile.name +
-                      ', ' +
-                      spTrk.otherArtists.items.map((i: any) => i?.profile?.name).join(', '),
+                    ', ' +
+                    spTrk.otherArtists.items.map((i: any) => i?.profile?.name).join(', '),
             // artist: trk.data.entity.artists.map((i: any) => i.name).join(', '),
             // year: spData.data.entity.releaseDate,
             year: `${spTrk.albumOfTrack.date.year}-${spTrk.albumOfTrack.date.month}-${spTrk.albumOfTrack.date.day}`,
@@ -57,10 +57,6 @@ export const getTrack = async (url: string = ''): Promise<Track | string> => {
             //trackNumber: spData.track_number || undefined
             trackNumber: spTrk.trackNumber
         }
-        await ytm.initialize()
-        let yt_trk = await ytm.searchSongs(`${tags.title} - ${tags.artist}`)
-        tags.id = yt_trk[0].videoId
-
         return tags
     } catch (err: any) {
         return `Caught: ${err.name} | ${err.message}`

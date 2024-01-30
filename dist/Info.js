@@ -54,9 +54,6 @@ const getTrack = async (url = '') => {
             //trackNumber: spData.track_number || undefined
             trackNumber: spTrk.trackNumber
         };
-        await ytm.initialize();
-        let yt_trk = await ytm.searchSongs(`${tags.title} - ${tags.artist}`);
-        tags.id = yt_trk[0].videoId;
         return tags;
     }
     catch (err) {
