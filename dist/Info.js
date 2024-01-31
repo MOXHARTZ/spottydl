@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getPlaylist = exports.getAlbum = exports.getTrack = void 0;
+const https_proxy_agent_1 = require("https-proxy-agent");
 const Util_1 = require("./Util");
 const axios_1 = __importDefault(require("axios"));
 const ytmusic_api_1 = __importDefault(require("ytmusic-api"));
@@ -25,11 +26,12 @@ const get_album_playlist = async (playlistId) => {
  * @param {string} url Track URL ex `https://open.spotify.com/track/...`
  * @returns {Track} <Track> if success, `string` if failed
  */
-const getTrack = async (url = '') => {
+const getTrack = async (url = '', localAddress) => {
     try {
+        const agent = new https_proxy_agent_1.HttpsProxyAgent(localAddress);
         let linkData = (0, Util_1.checkLinkType)(url);
         let properURL = (0, Util_1.getProperURL)(linkData.id, linkData.type);
-        let sp = await axios_1.default.get(properURL);
+        let sp = await axios_1.default.get(properURL, { httpsAgent: agent });
         let info = /<script id="initial-state" type="text\/plain">(.*?)<\/script>/s.exec(sp.data);
         // Decode the base64 data, then parse as json... info[1] matches the encoded data
         let spData = JSON.parse(Buffer.from(decodeURIComponent(info[1]), 'base64').toString('utf8'));
@@ -54,6 +56,9 @@ const getTrack = async (url = '') => {
             //trackNumber: spData.track_number || undefined
             trackNumber: spTrk.trackNumber
         };
+        await ytm.initialize();
+        let yt_trk = await ytm.searchSongs(`${tags.title} - ${tags.artist}`);
+        tags.id = yt_trk[0].videoId;
         return tags;
     }
     catch (err) {

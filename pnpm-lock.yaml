@@ -11,6 +11,9 @@ dependencies:
   fluent-ffmpeg:
     specifier: ^2.1.2
     version: 2.1.2
+  https-proxy-agent:
+    specifier: ^7.0.2
+    version: 7.0.2
   node-id3:
     specifier: ^0.2.6
     version: 0.2.6

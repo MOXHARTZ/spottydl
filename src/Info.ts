@@ -1,3 +1,4 @@
+import { HttpsProxyAgent } from 'https-proxy-agent'
 import { Album, Track, Playlist } from './index'
 import { checkLinkType, getProperURL } from './Util'
 import axios from 'axios'
@@ -26,11 +27,12 @@ const get_album_playlist = async (playlistId: string) => {
  * @param {string} url Track URL ex `https://open.spotify.com/track/...`
  * @returns {Track} <Track> if success, `string` if failed
  */
-export const getTrack = async (url: string = ''): Promise<Track | string> => {
+export const getTrack = async (url: string = '', localAddress: string): Promise<Track | string> => {
     try {
+        const agent = new HttpsProxyAgent(localAddress)
         let linkData = checkLinkType(url)
         let properURL = getProperURL(linkData.id, linkData.type)
-        let sp = await axios.get(properURL)
+        let sp = await axios.get(properURL, { httpsAgent: agent })
         let info: any = /<script id="initial-state" type="text\/plain">(.*?)<\/script>/s.exec(sp.data)
 
         // Decode the base64 data, then parse as json... info[1] matches the encoded data
@@ -57,6 +59,10 @@ export const getTrack = async (url: string = ''): Promise<Track | string> => {
             //trackNumber: spData.track_number || undefined
             trackNumber: spTrk.trackNumber
         }
+        await ytm.initialize()
+        let yt_trk = await ytm.searchSongs(`${tags.title} - ${tags.artist}`)
+        tags.id = yt_trk[0].videoId
+
         return tags
     } catch (err: any) {
         return `Caught: ${err.name} | ${err.message}`
