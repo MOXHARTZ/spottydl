@@ -27,12 +27,16 @@ const get_album_playlist = async (playlistId: string) => {
  * @param {string} url Track URL ex `https://open.spotify.com/track/...`
  * @returns {Track} <Track> if success, `string` if failed
  */
-export const getTrack = async (url: string = '', localAddress: string): Promise<Track | string> => {
+export const getTrack = async (url: string = '', localAddress?: string): Promise<Track | string> => {
     try {
-        const agent = new HttpsProxyAgent(localAddress)
         let linkData = checkLinkType(url)
         let properURL = getProperURL(linkData.id, linkData.type)
-        let sp = await axios.get(properURL, { httpsAgent: agent })
+        const props = {} as any
+        if (localAddress) {
+            let agent = new HttpsProxyAgent(localAddress)
+            props.httpsAgent = agent
+        }
+        let sp = await axios.get(properURL, props)
         let info: any = /<script id="initial-state" type="text\/plain">(.*?)<\/script>/s.exec(sp.data)
 
         // Decode the base64 data, then parse as json... info[1] matches the encoded data

@@ -1,6 +1,6 @@
 {
   "name": "spottydl",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "NodeJS Spotify Downloader without any API Keys or Authentication",
   "main": "dist/index.js",
   "typings": "types/index.d.ts",
