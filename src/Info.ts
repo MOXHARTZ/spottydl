@@ -2,7 +2,7 @@ import { HttpsProxyAgent } from 'https-proxy-agent'
 import { Album, Track, Playlist } from './index'
 import { checkLinkType, getProperURL } from './Util'
 import axios from 'axios'
-import YTMusic from 'ytmusic-api'
+import YTMusic, { YTCookie } from 'ytmusic-api'
 const ytm = new YTMusic()
 
 // Private methods
@@ -27,7 +27,7 @@ const get_album_playlist = async (playlistId: string) => {
  * @param {string} url Track URL ex `https://open.spotify.com/track/...`
  * @returns {Track} <Track> if success, `string` if failed
  */
-export const getTrack = async (url: string = '', localAddress?: string): Promise<Track | string> => {
+export const getTrack = async (url: string = '', cookies?: YTCookie[], localAddress?: string): Promise<Track | string> => {
     try {
         let linkData = checkLinkType(url)
         let properURL = getProperURL(linkData.id, linkData.type)
@@ -63,10 +63,13 @@ export const getTrack = async (url: string = '', localAddress?: string): Promise
             //trackNumber: spData.track_number || undefined
             trackNumber: spTrk.trackNumber
         }
-        await ytm.initialize()
+        const ytmProps = {} as any;
+        if (cookies) {
+            ytmProps.cookies = cookies
+        }
+        await ytm.initialize(ytmProps)
         let yt_trk = await ytm.searchSongs(`${tags.title} - ${tags.artist}`)
         tags.id = yt_trk[0].videoId
-
         return tags
     } catch (err: any) {
         return `Caught: ${err.name} | ${err.message}`

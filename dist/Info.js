@@ -26,7 +26,7 @@ const get_album_playlist = async (playlistId) => {
  * @param {string} url Track URL ex `https://open.spotify.com/track/...`
  * @returns {Track} <Track> if success, `string` if failed
  */
-const getTrack = async (url = '', localAddress) => {
+const getTrack = async (url = '', cookies, localAddress) => {
     try {
         let linkData = (0, Util_1.checkLinkType)(url);
         let properURL = (0, Util_1.getProperURL)(linkData.id, linkData.type);
@@ -60,7 +60,11 @@ const getTrack = async (url = '', localAddress) => {
             //trackNumber: spData.track_number || undefined
             trackNumber: spTrk.trackNumber
         };
-        await ytm.initialize();
+        const ytmProps = {};
+        if (cookies) {
+            ytmProps.cookies = cookies;
+        }
+        await ytm.initialize(ytmProps);
         let yt_trk = await ytm.searchSongs(`${tags.title} - ${tags.artist}`);
         tags.id = yt_trk[0].videoId;
         return tags;
