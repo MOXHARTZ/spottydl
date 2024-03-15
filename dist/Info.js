@@ -28,10 +28,14 @@ const get_album_playlist = async (playlistId) => {
  */
 const getTrack = async (url = '', localAddress) => {
     try {
-        const agent = new https_proxy_agent_1.HttpsProxyAgent(localAddress);
         let linkData = (0, Util_1.checkLinkType)(url);
         let properURL = (0, Util_1.getProperURL)(linkData.id, linkData.type);
-        let sp = await axios_1.default.get(properURL, { httpsAgent: agent });
+        const props = {};
+        if (localAddress) {
+            let agent = new https_proxy_agent_1.HttpsProxyAgent(localAddress);
+            props.httpsAgent = agent;
+        }
+        let sp = await axios_1.default.get(properURL, props);
         let info = /<script id="initial-state" type="text\/plain">(.*?)<\/script>/s.exec(sp.data);
         // Decode the base64 data, then parse as json... info[1] matches the encoded data
         let spData = JSON.parse(Buffer.from(decodeURIComponent(info[1]), 'base64').toString('utf8'));
