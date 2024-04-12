@@ -3,6 +3,7 @@ import { Album, Track, Playlist } from './index'
 import { checkLinkType, getProperURL } from './Util'
 import axios from 'axios'
 import YTMusic, { YTCookie } from 'ytmusic-api'
+import puppeteer from 'puppeteer'
 const ytm = new YTMusic()
 
 // Private methods
@@ -121,12 +122,55 @@ export const getAlbum = async (url: string = ''): Promise<Album | string> => {
  * @param {string} url Playlist URL ex `https://open.spotify.com/playlist/...`
  * @returns {Playlist} <Playlist> if success, `string` if failed
  */
+
+const Wait = (ms: number) => new Promise(res => setTimeout(res, ms))
+
+export const getDataFromPuppeteer = async (data: string): Promise<string> => {
+    const browser = await puppeteer.launch({
+        headless: false,
+        // defaultViewport: {
+        //     isMobile: true,
+        //     width: 375,
+        //     height: 667,
+        // }
+    });
+    const page = await browser.newPage();
+    page.setUserAgent('Mozilla/5.0 (Linux; Android 10; SM-G960F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.181 Mobile Safari/537.36')
+
+    await page.goto(data);
+    // await page.setContent(data);
+
+    let prevHeight = -1;
+    let maxScrolls = 100;
+    let scrollCount = 0;
+
+    while (scrollCount < maxScrolls) {
+        console.log('scrolling', scrollCount)
+        // Scroll to the bottom of the page
+        await page.evaluate('window.scrollTo(0, document.body.scrollHeight)');
+        let newHeight = await page.evaluate('document.body.scrollHeight') as number;
+        if (newHeight == prevHeight) {
+            console.log('break', newHeight, prevHeight)
+            break;
+        }
+        prevHeight = newHeight;
+        scrollCount += 1;
+    }
+
+    await Wait(1000)
+
+    let sp = await page.content();
+    // await browser.close();
+    return sp
+}
+
 export const getPlaylist = async (url: string = ''): Promise<Playlist | string> => {
     try {
         let linkData = checkLinkType(url)
         let properURL = getProperURL(linkData.id, linkData.type)
-        let sp = await axios.get(properURL)
-        let info: any = /<script id="initial-state" type="text\/plain">(.*?)<\/script>/s.exec(sp.data)
+        let sp = await getDataFromPuppeteer(properURL)
+        let info: any = /<script id="initial-state" type="text\/plain">(.*?)<\/script>/s.exec(sp)
+        // let info: any = /<script id="initial-state" type="text\/plain">(.*?)<\/script>/s.exec(sp.data)
         let spData = JSON.parse(Buffer.from(decodeURIComponent(info[1]), 'base64').toString('utf8'))
         // Assign necessary items to a variable
         let spPlaylist = spData.entities.items[`spotify:${linkData.type}:${linkData.id}`]

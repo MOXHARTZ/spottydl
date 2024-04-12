@@ -3,11 +3,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getPlaylist = exports.getAlbum = exports.getTrack = void 0;
+exports.getPlaylist = exports.getDataFromPuppeteer = exports.getAlbum = exports.getTrack = void 0;
 const https_proxy_agent_1 = require("https-proxy-agent");
 const Util_1 = require("./Util");
 const axios_1 = __importDefault(require("axios"));
 const ytmusic_api_1 = __importDefault(require("ytmusic-api"));
+const puppeteer_1 = __importDefault(require("puppeteer"));
 const ytm = new ytmusic_api_1.default();
 // Private methods
 const get_album_playlist = async (playlistId) => {
@@ -118,12 +119,48 @@ exports.getAlbum = getAlbum;
  * @param {string} url Playlist URL ex `https://open.spotify.com/playlist/...`
  * @returns {Playlist} <Playlist> if success, `string` if failed
  */
+const Wait = (ms) => new Promise(res => setTimeout(res, ms));
+const getDataFromPuppeteer = async (data) => {
+    const browser = await puppeteer_1.default.launch({
+        headless: false,
+        // defaultViewport: {
+        //     isMobile: true,
+        //     width: 375,
+        //     height: 667,
+        // }
+    });
+    const page = await browser.newPage();
+    page.setUserAgent('Mozilla/5.0 (Linux; Android 10; SM-G960F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.181 Mobile Safari/537.36');
+    await page.goto(data);
+    // await page.setContent(data);
+    let prevHeight = -1;
+    let maxScrolls = 100;
+    let scrollCount = 0;
+    while (scrollCount < maxScrolls) {
+        console.log('scrolling', scrollCount);
+        // Scroll to the bottom of the page
+        await page.evaluate('window.scrollTo(0, document.body.scrollHeight)');
+        let newHeight = await page.evaluate('document.body.scrollHeight');
+        if (newHeight == prevHeight) {
+            console.log('break', newHeight, prevHeight);
+            break;
+        }
+        prevHeight = newHeight;
+        scrollCount += 1;
+    }
+    await Wait(1000);
+    let sp = await page.content();
+    // await browser.close();
+    return sp;
+};
+exports.getDataFromPuppeteer = getDataFromPuppeteer;
 const getPlaylist = async (url = '') => {
     try {
         let linkData = (0, Util_1.checkLinkType)(url);
         let properURL = (0, Util_1.getProperURL)(linkData.id, linkData.type);
-        let sp = await axios_1.default.get(properURL);
-        let info = /<script id="initial-state" type="text\/plain">(.*?)<\/script>/s.exec(sp.data);
+        let sp = await (0, exports.getDataFromPuppeteer)(properURL);
+        let info = /<script id="initial-state" type="text\/plain">(.*?)<\/script>/s.exec(sp);
+        // let info: any = /<script id="initial-state" type="text\/plain">(.*?)<\/script>/s.exec(sp.data)
         let spData = JSON.parse(Buffer.from(decodeURIComponent(info[1]), 'base64').toString('utf8'));
         // Assign necessary items to a variable
         let spPlaylist = spData.entities.items[`spotify:${linkData.type}:${linkData.id}`];
